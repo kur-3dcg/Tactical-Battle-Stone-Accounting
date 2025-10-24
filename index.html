@@ -111,6 +111,7 @@
         let chartPeriod = 7;
         let chartBaseDate = new Date().toISOString().split('T')[0];
         let chartInstance = null;
+        let duplicateDates = new Set();
 
         // 初期化
         document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
@@ -310,9 +311,15 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        ${filtered.map(entry => `
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 text-sm text-gray-900">${new Date(entry.date).toLocaleDateString('ja-JP')}</td>
+                        ${filtered.map(entry => {
+                            const isDuplicate = duplicateDates.has(entry.date);
+                            const rowClass = isDuplicate ? 'bg-red-100 hover:bg-red-200' : 'hover:bg-gray-50';
+                            return `
+                            <tr class="${rowClass}">
+                                <td class="px-4 py-3 text-sm text-gray-900">
+                                    ${new Date(entry.date).toLocaleDateString('ja-JP')}
+                                    ${isDuplicate ? '<span class="text-red-600 ml-1">⚠️</span>' : ''}
+                                </td>
                                 <td class="px-4 py-3 text-sm text-gray-900">${entry.rank}位</td>
                                 <td class="px-4 py-3 text-sm text-green-600 font-medium">+${entry.reward}個</td>
                                 <td class="px-4 py-3 text-sm text-gray-900">${entry.stonesUsed}回</td>
@@ -325,7 +332,8 @@
                                     <button onclick="deleteData(${entry.id})" class="text-red-600 hover:text-red-800">🗑️</button>
                                 </td>
                             </tr>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </tbody>
                 </table>
             `;
@@ -364,15 +372,19 @@
                     const text = e.target.result;
                     const lines = text.split('\n');
                     const imported = [];
+                    const dateCount = {};
 
                     for (let i = 1; i < lines.length; i++) {
                         const line = lines[i].trim();
                         if (!line) continue;
                         const [date, rank, reward, stonesUsed, cost, balance] = line.split(',');
                         if (date && rank) {
+                            const trimmedDate = date.trim();
+                            dateCount[trimmedDate] = (dateCount[trimmedDate] || 0) + 1;
+                            
                             imported.push({
                                 id: Date.now() + i,
-                                date: date.trim(),
+                                date: trimmedDate,
                                 rank: parseInt(rank) || 0,
                                 stonesUsed: parseInt(stonesUsed) || 0,
                                 reward: parseInt(reward) || 0,
@@ -382,13 +394,20 @@
                         }
                     }
 
+                    // 重複チェック
+                    duplicateDates = new Set();
+                    for (const [date, count] of Object.entries(dateCount)) {
+                        if (count > 1) {
+                            duplicateDates.add(date);
+                        }
+                    }
+
                     data = imported.sort((a, b) => new Date(a.date) - new Date(b.date));
                     
                     // NaNがある場合は自動で再計算
                     const hasNaN = data.some(d => isNaN(d.reward) || isNaN(d.cost) || isNaN(d.balance) || d.reward === 0);
                     if (hasNaN) {
                         recalculateAll();
-                        alert('CSVファイルを読み込み、データを再計算しました');
                     } else {
                         saveData();
                         renderMonthTabs();
@@ -396,6 +415,14 @@
                         updateTotalBalance();
                         updateChart();
                         showSaveMessage();
+                    }
+
+                    // 重複警告
+                    if (duplicateDates.size > 0) {
+                        const duplicateList = Array.from(duplicateDates).join(', ');
+                        alert(`⚠️ 日付が重複したデータがあります\n重複日付: ${duplicateList}\n\n該当データは赤色で表示されています。`);
+                    } else if (hasNaN) {
+                        alert('CSVファイルを読み込み、データを再計算しました');
                     }
                 } catch (err) {
                     alert('CSVファイルの読み込みに失敗しました');
