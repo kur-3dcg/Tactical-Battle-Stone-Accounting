@@ -83,6 +83,7 @@
             <li><a href="https://kur-3dcg.github.io/ba-formation-manager/" target="_blank">戦術対抗戦 編成管理</a></li>
             <li><a href="https://kur-3dcg.github.io/blue-archive-tl-tool/" target="_blank">TL作支援ツール</a></li>
             <li><a href="https://kur-3dcg.github.io/Furniture-placement-simulator/" target="_blank">家具シミュレーションツール</a></li>
+            <li><a href="https://kur-3dcg.github.io/ba-mastery-simulator/" target="_blank">熟達証書シミュレーター</a></li>
             <li><a href="https://kur-3dcg.github.io/Audio-and-Video-Switching-Tool/" target="_blank">画像音声切り替えツール</a></li>
             <li class="hamburger-divider"></li>
             <li><a href="https://docs.google.com/forms/d/e/1FAIpQLSdR0wl-jLiBQ3ut3mDBJ0c0Re1N4nQO8ZUNANjFqxdO--qYLQ/viewform?usp=dialog" target="_blank">ご意見・ご感想・バグ報告</a></li>
@@ -99,9 +100,15 @@
             </div>
             <div class="flex items-center justify-between">
                 <p class="text-gray-600">最終順位から石の収支を自動計算</p>
-                <div class="text-right">
-                    <p class="text-sm text-gray-500">トータル収支</p>
-                    <p id="totalBalance" class="text-3xl font-bold text-green-600">0個</p>
+                <div class="flex gap-6 items-end">
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500">平均石割回数</p>
+                        <p id="avgStones" class="text-xl font-bold text-gray-700">0.0回/日</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500">トータル収支</p>
+                        <p id="totalBalance" class="text-3xl font-bold text-green-600">0個</p>
+                    </div>
                 </div>
             </div>
             <div class="flex gap-2 mt-4">
@@ -122,10 +129,14 @@
         <div id="inputForm" class="bg-white rounded-lg shadow-lg p-6 mb-6 transition-colors">
             <h2 id="formTitle" class="text-xl font-bold text-gray-800 mb-4">データ入力</h2>
             <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">日付</label>
                         <input type="date" id="dateInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">開始順位</label>
+                        <input type="number" id="startRankInput" placeholder="開始前の順位" min="1" max="15000" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">最終順位</label>
@@ -148,7 +159,7 @@
             </div>
         </div>
 
-        <!-- グラフ -->
+        <!-- 収支推移グラフ -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-gray-800">📈 収支推移グラフ</h2>
@@ -175,6 +186,33 @@
             </div>
         </div>
 
+        <!-- 順位推移グラフ -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">📊 順位推移グラフ</h2>
+                <button onclick="toggleRankChart()" class="text-indigo-600 hover:text-indigo-700 font-medium">
+                    <span id="rankChartToggleText">表示</span>
+                </button>
+            </div>
+            <div id="rankChartContainer" class="hidden">
+                <div class="mb-4 flex flex-wrap items-center gap-2">
+                    <label class="text-sm font-medium text-gray-700">基準日:</label>
+                    <input type="date" id="rankChartBaseDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500" onchange="updateRankChart()">
+                    <button onclick="setRankChartToday()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">最新</button>
+                    <span class="text-gray-500 mx-2">|</span>
+                    <label class="text-sm font-medium text-gray-700">期間:</label>
+                </div>
+                <div class="flex gap-2 mb-4 flex-wrap">
+                    <button onclick="setRankChartPeriod(7)" class="rank-period-btn px-4 py-2 rounded-md bg-indigo-600 text-white">7日</button>
+                    <button onclick="setRankChartPeriod(14)" class="rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">14日</button>
+                    <button onclick="setRankChartPeriod(30)" class="rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">1ヶ月</button>
+                    <button onclick="setRankChartPeriod(90)" class="rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">3ヶ月</button>
+                    <button onclick="setRankChartPeriod(180)" class="rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">6ヶ月</button>
+                </div>
+                <canvas id="rankChart" height="100"></canvas>
+            </div>
+        </div>
+
         <!-- データベーステーブル -->
         <div class="bg-white rounded-lg shadow-lg p-6">
             <div class="flex items-center justify-between mb-4">
@@ -193,14 +231,19 @@
         let chartPeriod = 7;
         let chartBaseDate = new Date().toISOString().split('T')[0];
         let chartInstance = null;
+        let rankChartPeriod = 7;
+        let rankChartBaseDate = new Date().toISOString().split('T')[0];
+        let rankChartInstance = null;
 
         // 初期化
         document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
         document.getElementById('chartBaseDate').value = chartBaseDate;
+        document.getElementById('rankChartBaseDate').value = rankChartBaseDate;
         loadData();
         renderMonthTabs();
         renderTable();
         updateTotalBalance();
+        updateAverageStats();
 
         function getRankReward(rank) {
             const r = parseInt(rank);
@@ -244,6 +287,7 @@
 
         function submitData() {
             const date = document.getElementById('dateInput').value;
+            const startRank = document.getElementById('startRankInput').value;
             const rank = document.getElementById('rankInput').value;
             const stonesUsed = parseInt(document.getElementById('stonesInput').value) || 0;
             const errorDiv = document.getElementById('errorMessage');
@@ -269,7 +313,16 @@
 
             if (editingId) {
                 const index = data.findIndex(d => d.id === editingId);
-                data[index] = { id: editingId, date, rank: parseInt(rank), stonesUsed, reward, cost, balance };
+                data[index] = {
+                    id: editingId,
+                    date,
+                    startRank: startRank ? parseInt(startRank) : null,
+                    rank: parseInt(rank),
+                    stonesUsed,
+                    reward,
+                    cost,
+                    balance
+                };
                 editingId = null;
                 document.getElementById('formTitle').textContent = 'データ入力';
                 document.getElementById('submitButtonText').textContent = '追加';
@@ -280,6 +333,7 @@
                 data.push({
                     id: Date.now(),
                     date,
+                    startRank: startRank ? parseInt(startRank) : null,
                     rank: parseInt(rank),
                     stonesUsed,
                     reward,
@@ -290,8 +344,9 @@
 
             data.sort((a, b) => new Date(a.date) - new Date(b.date));
             lastRank = rank;
-            
+
             document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+            document.getElementById('startRankInput').value = '';
             document.getElementById('rankInput').value = rank;
             document.getElementById('stonesInput').value = 0;
 
@@ -299,7 +354,9 @@
             renderMonthTabs();
             renderTable();
             updateTotalBalance();
+            updateAverageStats();
             updateChart();
+            updateRankChart();
         }
 
         function editData(id) {
@@ -308,6 +365,7 @@
 
             editingId = id;
             document.getElementById('dateInput').value = entry.date;
+            document.getElementById('startRankInput').value = entry.startRank || '';
             document.getElementById('rankInput').value = entry.rank;
             document.getElementById('stonesInput').value = entry.stonesUsed;
             document.getElementById('formTitle').textContent = 'データ編集';
@@ -326,12 +384,15 @@
             renderMonthTabs();
             renderTable();
             updateTotalBalance();
+            updateAverageStats();
             updateChart();
+            updateRankChart();
         }
 
         function cancelEdit() {
             editingId = null;
             document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+            document.getElementById('startRankInput').value = '';
             document.getElementById('rankInput').value = lastRank;
             document.getElementById('stonesInput').value = 0;
             document.getElementById('formTitle').textContent = 'データ入力';
@@ -345,7 +406,7 @@
         function renderMonthTabs() {
             const months = [...new Set(data.map(d => d.date.slice(0, 7)))].sort().reverse();
             const tabsDiv = document.getElementById('monthTabs');
-            
+
             if (months.length === 0) {
                 tabsDiv.innerHTML = '';
                 return;
@@ -383,6 +444,7 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">日付</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">開始順位</th>
                             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">最終順位</th>
                             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">報酬石</th>
                             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">割った石</th>
@@ -395,6 +457,7 @@
                         ${filtered.map(entry => `
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-3 text-sm text-gray-900">${new Date(entry.date).toLocaleDateString('ja-JP')}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500">${entry.startRank ? entry.startRank + '位' : '-'}</td>
                                 <td class="px-4 py-3 text-sm text-gray-900">${entry.rank}位</td>
                                 <td class="px-4 py-3 text-sm text-green-600 font-medium">+${entry.reward}個</td>
                                 <td class="px-4 py-3 text-sm text-gray-900">${entry.stonesUsed}回</td>
@@ -420,14 +483,25 @@
             elem.className = `text-3xl font-bold ${total >= 0 ? 'text-green-600' : 'text-red-600'}`;
         }
 
+        function updateAverageStats() {
+            const elem = document.getElementById('avgStones');
+            if (data.length === 0) {
+                elem.textContent = '0.0回/日';
+                return;
+            }
+            const total = data.reduce((sum, d) => sum + d.stonesUsed, 0);
+            const avg = total / data.length;
+            elem.textContent = `${avg.toFixed(1)}回/日`;
+        }
+
         function exportCSV() {
             if (data.length === 0) {
                 alert('エクスポートするデータがありません');
                 return;
             }
 
-            const headers = ['日付', '最終順位', '報酬石', '割った石', '消費石', '収支'];
-            const rows = data.map(d => [d.date, d.rank, d.reward, d.stonesUsed, d.cost, d.balance]);
+            const headers = ['日付', '開始順位', '最終順位', '報酬石', '割った石', '消費石', '収支'];
+            const rows = data.map(d => [d.date, d.startRank ?? '', d.rank, d.reward, d.stonesUsed, d.cost, d.balance]);
             const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
@@ -447,14 +521,28 @@
                     const lines = text.split('\n');
                     const imported = [];
 
+                    // ヘッダー行で列数を確認（新形式:7列 / 旧形式:6列）
+                    const headerCols = lines[0].split(',').length;
+                    const isNewFormat = headerCols >= 7;
+
                     for (let i = 1; i < lines.length; i++) {
                         const line = lines[i].trim();
                         if (!line) continue;
-                        const [date, rank, reward, stonesUsed, cost, balance] = line.split(',');
+                        const parts = line.split(',');
+
+                        let date, startRank, rank, reward, stonesUsed, cost, balance;
+                        if (isNewFormat) {
+                            [date, startRank, rank, reward, stonesUsed, cost, balance] = parts;
+                        } else {
+                            [date, rank, reward, stonesUsed, cost, balance] = parts;
+                            startRank = '';
+                        }
+
                         if (date && rank) {
                             imported.push({
                                 id: Date.now() + i,
                                 date: date.trim(),
+                                startRank: startRank ? parseInt(startRank) || null : null,
                                 rank: parseInt(rank) || 0,
                                 stonesUsed: parseInt(stonesUsed) || 0,
                                 reward: parseInt(reward) || 0,
@@ -465,8 +553,7 @@
                     }
 
                     data = imported.sort((a, b) => new Date(a.date) - new Date(b.date));
-                    
-                    // NaNがある場合は自動で再計算
+
                     const hasNaN = data.some(d => isNaN(d.reward) || isNaN(d.cost) || isNaN(d.balance) || d.reward === 0);
                     if (hasNaN) {
                         recalculateAll();
@@ -476,7 +563,9 @@
                         renderMonthTabs();
                         renderTable();
                         updateTotalBalance();
+                        updateAverageStats();
                         updateChart();
+                        updateRankChart();
                         showSaveMessage();
                     }
                 } catch (err) {
@@ -498,33 +587,32 @@
                 const reward = getRankReward(entry.rank);
                 const cost = entry.stonesUsed * 60;
                 const balance = reward - cost;
-                
+
                 if (entry.reward !== reward || entry.cost !== cost || entry.balance !== balance) {
                     recalculated++;
                 }
-                
-                return {
-                    ...entry,
-                    reward,
-                    cost,
-                    balance
-                };
+
+                return { ...entry, reward, cost, balance };
             });
 
             saveData();
             renderMonthTabs();
             renderTable();
             updateTotalBalance();
+            updateAverageStats();
             updateChart();
-            
+            updateRankChart();
+
             alert(`${recalculated}件のデータを再計算しました`);
         }
+
+        // ---- 収支グラフ ----
 
         function toggleChart() {
             const container = document.getElementById('chartContainer');
             const toggleText = document.getElementById('chartToggleText');
             const isHidden = container.classList.contains('hidden');
-            
+
             if (isHidden) {
                 container.classList.remove('hidden');
                 toggleText.textContent = '非表示';
@@ -557,31 +645,25 @@
             const baseDate = new Date(chartBaseDate);
             const cutoff = new Date(baseDate);
             cutoff.setDate(cutoff.getDate() - chartPeriod);
-            
+
             const filtered = data.filter(d => {
                 const entryDate = new Date(d.date);
                 return entryDate >= cutoff && entryDate <= baseDate;
             }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // 基準日以前の累計を計算
-            const beforeData = data.filter(d => new Date(d.date) < cutoff).sort((a, b) => new Date(a.date) - new Date(b.date));
-            let initialCumulative = beforeData.reduce((sum, d) => sum + d.balance, 0);
+            const beforeData = data.filter(d => new Date(d.date) < cutoff);
+            let cumulative = beforeData.reduce((sum, d) => sum + d.balance, 0);
 
-            let cumulative = initialCumulative;
             const chartData = filtered.map(d => {
                 cumulative += d.balance;
                 return {
                     date: new Date(d.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
-                    balance: d.balance,
-                    cumulative: cumulative
+                    cumulative
                 };
             });
 
             const ctx = document.getElementById('balanceChart').getContext('2d');
-            
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
+            if (chartInstance) chartInstance.destroy();
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
@@ -599,14 +681,136 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: true
-                        }
-                    },
+                    plugins: { legend: { display: true } },
+                    scales: { y: { beginAtZero: false } }
+                }
+            });
+        }
+
+        // ---- 順位グラフ ----
+
+        function toggleRankChart() {
+            const container = document.getElementById('rankChartContainer');
+            const toggleText = document.getElementById('rankChartToggleText');
+            const isHidden = container.classList.contains('hidden');
+
+            if (isHidden) {
+                container.classList.remove('hidden');
+                toggleText.textContent = '非表示';
+                updateRankChart();
+            } else {
+                container.classList.add('hidden');
+                toggleText.textContent = '表示';
+            }
+        }
+
+        function setRankChartToday() {
+            rankChartBaseDate = new Date().toISOString().split('T')[0];
+            document.getElementById('rankChartBaseDate').value = rankChartBaseDate;
+            updateRankChart();
+        }
+
+        function setRankChartPeriod(days) {
+            rankChartPeriod = days;
+            document.querySelectorAll('.rank-period-btn').forEach(btn => {
+                btn.className = 'rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700';
+            });
+            event.target.className = 'rank-period-btn px-4 py-2 rounded-md bg-indigo-600 text-white';
+            updateRankChart();
+        }
+
+        function updateRankChart() {
+            if (document.getElementById('rankChartContainer').classList.contains('hidden')) return;
+
+            rankChartBaseDate = document.getElementById('rankChartBaseDate').value;
+            const baseDate = new Date(rankChartBaseDate);
+            const cutoff = new Date(baseDate);
+            cutoff.setDate(cutoff.getDate() - rankChartPeriod);
+
+            const filtered = data.filter(d => {
+                const entryDate = new Date(d.date);
+                return entryDate >= cutoff && entryDate <= baseDate;
+            }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const labels = filtered.map(d =>
+                new Date(d.date).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
+            );
+
+            const startRanks = filtered.map(d => d.startRank ?? null);
+            const finalRanks = filtered.map(d => d.rank);
+
+            const validStart = filtered.filter(d => d.startRank).map(d => d.startRank);
+            const avgStartRank = validStart.length > 0
+                ? validStart.reduce((s, r) => s + r, 0) / validStart.length
+                : null;
+            const avgFinalRank = filtered.length > 0
+                ? finalRanks.reduce((s, r) => s + r, 0) / filtered.length
+                : null;
+
+            const datasets = [
+                {
+                    label: '開始順位',
+                    data: startRanks,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245,158,11,0.08)',
+                    tension: 0.4,
+                    spanGaps: true,
+                    fill: false
+                },
+                {
+                    label: '最終順位',
+                    data: finalRanks,
+                    borderColor: '#4a8bd4',
+                    backgroundColor: 'rgba(74,139,212,0.08)',
+                    tension: 0.4,
+                    fill: false
+                }
+            ];
+
+            if (avgStartRank !== null) {
+                datasets.push({
+                    label: `平均開始順位 (${Math.round(avgStartRank)}位)`,
+                    data: filtered.map(() => Math.round(avgStartRank)),
+                    borderColor: '#f59e0b',
+                    borderDash: [6, 4],
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0
+                });
+            }
+
+            if (avgFinalRank !== null) {
+                datasets.push({
+                    label: `平均最終順位 (${Math.round(avgFinalRank)}位)`,
+                    data: filtered.map(() => Math.round(avgFinalRank)),
+                    borderColor: '#4a8bd4',
+                    borderDash: [6, 4],
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0
+                });
+            }
+
+            const ctx = document.getElementById('rankChart').getContext('2d');
+            if (rankChartInstance) rankChartInstance.destroy();
+
+            rankChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: true } },
                     scales: {
                         y: {
-                            beginAtZero: false
+                            reverse: true,
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: '順位（上が高順位）'
+                            }
                         }
                     }
                 }
