@@ -68,6 +68,9 @@
             border-radius: 8px; transition: all 0.2s ease;
         }
         .hamburger-links a:hover { background: #e8f1fa; color: #4a8bd4; }
+        #chartModal { background: rgba(17,24,39,0.96); }
+        #chartModal .modal-body { min-height: 0; }
+        #chartModal canvas { display: block; }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -163,12 +166,17 @@
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-gray-800">📈 収支推移グラフ</h2>
-                <button onclick="toggleChart()" class="text-indigo-600 hover:text-indigo-700 font-medium">
-                    <span id="chartToggleText">表示</span>
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="openChartModal('balance')" title="最大化" class="text-gray-400 hover:text-indigo-600 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                    </button>
+                    <button onclick="toggleChart()" class="text-indigo-600 hover:text-indigo-700 font-medium">
+                        <span id="chartToggleText">表示</span>
+                    </button>
+                </div>
             </div>
             <div id="chartContainer" class="hidden">
-                <div class="mb-4 flex flex-wrap items-center gap-2">
+                <div id="chartBaseDateRow" class="mb-4 flex flex-wrap items-center gap-2">
                     <label class="text-sm font-medium text-gray-700">基準日:</label>
                     <input type="date" id="chartBaseDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500" onchange="updateChart()">
                     <button onclick="setToday()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">最新</button>
@@ -181,6 +189,13 @@
                     <button onclick="setChartPeriod(30)" class="period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">1ヶ月</button>
                     <button onclick="setChartPeriod(90)" class="period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">3ヶ月</button>
                     <button onclick="setChartPeriod(180)" class="period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">6ヶ月</button>
+                    <button onclick="setChartCustom()" class="period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">カスタム</button>
+                </div>
+                <div id="chartCustomRange" class="hidden mb-4 flex flex-wrap items-center gap-2">
+                    <label class="text-sm font-medium text-gray-700">開始日:</label>
+                    <input type="date" id="chartCustomStart" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500" onchange="updateChart()">
+                    <label class="text-sm font-medium text-gray-700">終了日:</label>
+                    <input type="date" id="chartCustomEnd" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500" onchange="updateChart()">
                 </div>
                 <canvas id="balanceChart" height="100"></canvas>
             </div>
@@ -190,12 +205,17 @@
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-gray-800">📊 順位推移グラフ</h2>
-                <button onclick="toggleRankChart()" class="text-indigo-600 hover:text-indigo-700 font-medium">
-                    <span id="rankChartToggleText">表示</span>
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="openChartModal('rank')" title="最大化" class="text-gray-400 hover:text-indigo-600 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                    </button>
+                    <button onclick="toggleRankChart()" class="text-indigo-600 hover:text-indigo-700 font-medium">
+                        <span id="rankChartToggleText">表示</span>
+                    </button>
+                </div>
             </div>
             <div id="rankChartContainer" class="hidden">
-                <div class="mb-4 flex flex-wrap items-center gap-2">
+                <div id="rankChartBaseDateRow" class="mb-4 flex flex-wrap items-center gap-2">
                     <label class="text-sm font-medium text-gray-700">基準日:</label>
                     <input type="date" id="rankChartBaseDate" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500" onchange="updateRankChart()">
                     <button onclick="setRankChartToday()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">最新</button>
@@ -208,8 +228,30 @@
                     <button onclick="setRankChartPeriod(30)" class="rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">1ヶ月</button>
                     <button onclick="setRankChartPeriod(90)" class="rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">3ヶ月</button>
                     <button onclick="setRankChartPeriod(180)" class="rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">6ヶ月</button>
+                    <button onclick="setRankChartCustom()" class="rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700">カスタム</button>
+                </div>
+                <div id="rankChartCustomRange" class="hidden mb-4 flex flex-wrap items-center gap-2">
+                    <label class="text-sm font-medium text-gray-700">開始日:</label>
+                    <input type="date" id="rankChartCustomStart" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500" onchange="updateRankChart()">
+                    <label class="text-sm font-medium text-gray-700">終了日:</label>
+                    <input type="date" id="rankChartCustomEnd" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500" onchange="updateRankChart()">
                 </div>
                 <canvas id="rankChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- グラフ最大化モーダル -->
+        <div id="chartModal" class="hidden fixed inset-0 z-[2000] flex flex-col p-4 md:p-8">
+            <div class="flex items-center justify-between mb-4 flex-shrink-0">
+                <h2 id="chartModalTitle" class="text-white text-xl font-bold"></h2>
+                <button onclick="closeChartModal()" class="flex items-center gap-2 text-white border border-white border-opacity-40 hover:border-opacity-80 px-4 py-2 rounded-lg transition text-sm font-medium">
+                    ✕ 閉じる
+                </button>
+            </div>
+            <div class="modal-body flex-1 bg-white rounded-xl p-4 md:p-6" style="overflow: hidden;">
+                <div style="height: 100%; position: relative;">
+                    <canvas id="modalCanvas"></canvas>
+                </div>
             </div>
         </div>
 
@@ -231,9 +273,11 @@
         let chartPeriod = 7;
         let chartBaseDate = new Date().toISOString().split('T')[0];
         let chartInstance = null;
+        let chartCustomMode = false;
         let rankChartPeriod = 7;
         let rankChartBaseDate = new Date().toISOString().split('T')[0];
         let rankChartInstance = null;
+        let rankChartCustomMode = false;
 
         // 初期化
         document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
@@ -630,21 +674,46 @@
         }
 
         function setChartPeriod(days) {
+            chartCustomMode = false;
             chartPeriod = days;
             document.querySelectorAll('.period-btn').forEach(btn => {
                 btn.className = 'period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700';
             });
             event.target.className = 'period-btn px-4 py-2 rounded-md bg-indigo-600 text-white';
+            document.getElementById('chartBaseDateRow').classList.remove('hidden');
+            document.getElementById('chartCustomRange').classList.add('hidden');
             updateChart();
         }
 
-        function updateChart() {
-            if (document.getElementById('chartContainer').classList.contains('hidden')) return;
+        function setChartCustom() {
+            chartCustomMode = true;
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.className = 'period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700';
+            });
+            event.target.className = 'period-btn px-4 py-2 rounded-md bg-indigo-600 text-white';
+            document.getElementById('chartBaseDateRow').classList.add('hidden');
+            document.getElementById('chartCustomRange').classList.remove('hidden');
+            const endInput = document.getElementById('chartCustomEnd');
+            const startInput = document.getElementById('chartCustomStart');
+            if (!endInput.value) endInput.value = new Date().toISOString().split('T')[0];
+            if (!startInput.value && data.length > 0) startInput.value = data[0].date;
+            updateChart();
+        }
 
-            chartBaseDate = document.getElementById('chartBaseDate').value;
-            const baseDate = new Date(chartBaseDate);
-            const cutoff = new Date(baseDate);
-            cutoff.setDate(cutoff.getDate() - chartPeriod);
+        function buildBalanceChartConfig(maintainAspectRatio) {
+            let cutoff, baseDate;
+            if (chartCustomMode) {
+                const s = document.getElementById('chartCustomStart').value;
+                const e = document.getElementById('chartCustomEnd').value;
+                if (!s || !e) return null;
+                cutoff = new Date(s);
+                baseDate = new Date(e);
+            } else {
+                chartBaseDate = document.getElementById('chartBaseDate').value;
+                baseDate = new Date(chartBaseDate);
+                cutoff = new Date(baseDate);
+                cutoff.setDate(cutoff.getDate() - chartPeriod);
+            }
 
             const filtered = data.filter(d => {
                 const entryDate = new Date(d.date);
@@ -662,10 +731,7 @@
                 };
             });
 
-            const ctx = document.getElementById('balanceChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-
-            chartInstance = new Chart(ctx, {
+            return {
                 type: 'line',
                 data: {
                     labels: chartData.map(d => d.date),
@@ -680,11 +746,20 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio,
                     plugins: { legend: { display: true } },
                     scales: { y: { beginAtZero: false } }
                 }
-            });
+            };
+        }
+
+        function updateChart() {
+            if (document.getElementById('chartContainer').classList.contains('hidden')) return;
+            const config = buildBalanceChartConfig(true);
+            if (!config) return;
+            const ctx = document.getElementById('balanceChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, config);
         }
 
         // ---- 順位グラフ ----
@@ -711,21 +786,46 @@
         }
 
         function setRankChartPeriod(days) {
+            rankChartCustomMode = false;
             rankChartPeriod = days;
             document.querySelectorAll('.rank-period-btn').forEach(btn => {
                 btn.className = 'rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700';
             });
             event.target.className = 'rank-period-btn px-4 py-2 rounded-md bg-indigo-600 text-white';
+            document.getElementById('rankChartBaseDateRow').classList.remove('hidden');
+            document.getElementById('rankChartCustomRange').classList.add('hidden');
             updateRankChart();
         }
 
-        function updateRankChart() {
-            if (document.getElementById('rankChartContainer').classList.contains('hidden')) return;
+        function setRankChartCustom() {
+            rankChartCustomMode = true;
+            document.querySelectorAll('.rank-period-btn').forEach(btn => {
+                btn.className = 'rank-period-btn px-4 py-2 rounded-md bg-gray-200 text-gray-700';
+            });
+            event.target.className = 'rank-period-btn px-4 py-2 rounded-md bg-indigo-600 text-white';
+            document.getElementById('rankChartBaseDateRow').classList.add('hidden');
+            document.getElementById('rankChartCustomRange').classList.remove('hidden');
+            const endInput = document.getElementById('rankChartCustomEnd');
+            const startInput = document.getElementById('rankChartCustomStart');
+            if (!endInput.value) endInput.value = new Date().toISOString().split('T')[0];
+            if (!startInput.value && data.length > 0) startInput.value = data[0].date;
+            updateRankChart();
+        }
 
-            rankChartBaseDate = document.getElementById('rankChartBaseDate').value;
-            const baseDate = new Date(rankChartBaseDate);
-            const cutoff = new Date(baseDate);
-            cutoff.setDate(cutoff.getDate() - rankChartPeriod);
+        function buildRankChartConfig(maintainAspectRatio) {
+            let cutoff, baseDate;
+            if (rankChartCustomMode) {
+                const s = document.getElementById('rankChartCustomStart').value;
+                const e = document.getElementById('rankChartCustomEnd').value;
+                if (!s || !e) return null;
+                cutoff = new Date(s);
+                baseDate = new Date(e);
+            } else {
+                rankChartBaseDate = document.getElementById('rankChartBaseDate').value;
+                baseDate = new Date(rankChartBaseDate);
+                cutoff = new Date(baseDate);
+                cutoff.setDate(cutoff.getDate() - rankChartPeriod);
+            }
 
             const filtered = data.filter(d => {
                 const entryDate = new Date(d.date);
@@ -739,13 +839,17 @@
             const startRanks = filtered.map(d => d.startRank ?? null);
             const finalRanks = filtered.map(d => d.rank);
 
-            const validStart = filtered.filter(d => d.startRank).map(d => d.startRank);
-            const avgStartRank = validStart.length > 0
-                ? validStart.reduce((s, r) => s + r, 0) / validStart.length
-                : null;
-            const avgFinalRank = filtered.length > 0
-                ? finalRanks.reduce((s, r) => s + r, 0) / filtered.length
-                : null;
+            let startSum = 0, startCount = 0;
+            const runningAvgStart = filtered.map(d => {
+                if (d.startRank) { startSum += d.startRank; startCount++; }
+                return startCount > 0 ? Math.round(startSum / startCount) : null;
+            });
+
+            let finalSum = 0;
+            const runningAvgFinal = filtered.map((d, i) => {
+                finalSum += d.rank;
+                return Math.round(finalSum / (i + 1));
+            });
 
             const datasets = [
                 {
@@ -767,23 +871,24 @@
                 }
             ];
 
-            if (avgStartRank !== null) {
+            if (startCount > 0) {
                 datasets.push({
-                    label: `平均開始順位 (${Math.round(avgStartRank)}位)`,
-                    data: filtered.map(() => Math.round(avgStartRank)),
+                    label: '平均開始順位（累積）',
+                    data: runningAvgStart,
                     borderColor: '#f59e0b',
                     borderDash: [6, 4],
                     borderWidth: 1.5,
                     pointRadius: 0,
                     fill: false,
-                    tension: 0
+                    tension: 0,
+                    spanGaps: true
                 });
             }
 
-            if (avgFinalRank !== null) {
+            if (filtered.length > 0) {
                 datasets.push({
-                    label: `平均最終順位 (${Math.round(avgFinalRank)}位)`,
-                    data: filtered.map(() => Math.round(avgFinalRank)),
+                    label: '平均最終順位（累積）',
+                    data: runningAvgFinal,
                     borderColor: '#4a8bd4',
                     borderDash: [6, 4],
                     borderWidth: 1.5,
@@ -793,29 +898,62 @@
                 });
             }
 
-            const ctx = document.getElementById('rankChart').getContext('2d');
-            if (rankChartInstance) rankChartInstance.destroy();
-
-            rankChartInstance = new Chart(ctx, {
+            return {
                 type: 'line',
                 data: { labels, datasets },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio,
                     plugins: { legend: { display: true } },
                     scales: {
                         y: {
                             reverse: true,
                             beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: '順位（上が高順位）'
-                            }
+                            title: { display: true, text: '順位（上が高順位）' }
                         }
                     }
                 }
-            });
+            };
         }
+
+        function updateRankChart() {
+            if (document.getElementById('rankChartContainer').classList.contains('hidden')) return;
+            const config = buildRankChartConfig(true);
+            if (!config) return;
+            const ctx = document.getElementById('rankChart').getContext('2d');
+            if (rankChartInstance) rankChartInstance.destroy();
+            rankChartInstance = new Chart(ctx, config);
+        }
+
+        // ---- グラフ最大化モーダル ----
+
+        let modalChartInstance = null;
+
+        function openChartModal(type) {
+            const modal = document.getElementById('chartModal');
+            document.getElementById('chartModalTitle').textContent =
+                type === 'balance' ? '📈 収支推移グラフ' : '📊 順位推移グラフ';
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            setTimeout(() => {
+                if (modalChartInstance) { modalChartInstance.destroy(); modalChartInstance = null; }
+                const config = type === 'balance'
+                    ? buildBalanceChartConfig(false)
+                    : buildRankChartConfig(false);
+                if (!config) return;
+                const ctx = document.getElementById('modalCanvas').getContext('2d');
+                modalChartInstance = new Chart(ctx, config);
+            }, 30);
+        }
+
+        function closeChartModal() {
+            document.getElementById('chartModal').classList.add('hidden');
+            document.body.style.overflow = '';
+            if (modalChartInstance) { modalChartInstance.destroy(); modalChartInstance = null; }
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChartModal(); });
     </script>
     <script>
         const hamburgerBtn = document.getElementById('hamburgerBtn');
